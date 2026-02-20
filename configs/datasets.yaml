@@ -1,0 +1,15 @@
+# Dataset Version Registry
+# Add a new entry whenever the dataset changes (new images, re-annotations, different splits)
+
+mergeRM_v1:
+  description: "Original merged RoboMaster armor plate dataset"
+  date_added: "2025-02-01"
+  source: "NYU server /Datasets/mergeRM"
+  classes: ["plate"]
+  nc: 1
+  splits:
+    train: { images: 5805, with_labels: 4836, backgrounds: 968 }
+    val: { images: 909, with_labels: 742, backgrounds: 166 }
+    test: { images: 706, with_labels: 573, backgrounds: 132 }
+  data_yaml: "configs/data_mergeRM_v1.yaml"
+  notes: "Original yaml had task=obb but trained as standard detect"

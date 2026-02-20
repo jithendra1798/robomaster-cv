@@ -1,0 +1,20 @@
+# YOLOv11l hyperparameters
+# Using same tuned values as Small for fair A/B comparison
+# These were tuned on Small model - may not be optimal for Large
+# Date: 2025-02-20
+
+model: yolo11l.pt
+epochs: 100
+imgsz: 640
+batch: 16  # May need to reduce to 8 if VRAM is tight
+
+# Same tuned parameters as Small (for fair comparison)
+weight_decay: 0.001
+box: 6.22111
+mosaic: 1.0
+
+# Deployment target: Jetson Orin Nano 8GB
+# Key concern: model size and inference speed after TensorRT quantization
+# YOLOv11l has ~25.3M params vs 9.4M for Small (~2.7x more)
+
+# Results: [pending]

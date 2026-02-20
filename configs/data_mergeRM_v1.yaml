@@ -1,0 +1,10 @@
+# YOLO dataset config for mergeRM v1
+# Relative paths - works on any machine as long as data/ is in the project root
+path: ../data/mergeRM_v1
+train: images/train
+val: images/val
+test: images/test
+
+nc: 1
+names:
+  - plate

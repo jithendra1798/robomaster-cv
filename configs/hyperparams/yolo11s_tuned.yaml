@@ -1,0 +1,25 @@
+# YOLOv11s tuned hyperparameters
+# Source: model.tune() 10 iterations, best at iteration 7
+# Tuned on: mergeRM_v1, NYU server RTX 4090
+# Date: 2025-02-13
+# Note: lr0 and momentum were overridden by auto optimizer (AdamW lr=0.002, momentum=0.9)
+#       Only weight_decay, box, and mosaic were effectively tuned
+
+model: yolo11s.pt
+epochs: 100
+imgsz: 640
+batch: 16
+
+# Tuned parameters
+weight_decay: 0.001
+box: 6.22111
+mosaic: 1.0
+
+# These were in the search space but overridden by optimizer=auto
+# To actually tune these, set optimizer: SGD explicitly
+# lr0: 0.03529
+# momentum: 0.98
+
+# Results (test set):
+# Precision: 86.7%, Recall: 89.2%, mAP50: 92.2%, mAP50-95: 63.5%
+# Inference: 1.2ms/image (RTX 4090)
