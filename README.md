@@ -6,7 +6,7 @@ YOLO model training and evaluation for NYU RoboMaster VIP team. Tracks experimen
 
 ### 1. Clone and install
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/jithendra1798/robomaster-cv.git
 cd robomaster-cv
 pip install -r requirements.txt
 ```
