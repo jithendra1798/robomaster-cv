@@ -1,7 +1,18 @@
 # Dataset Version Registry
-# Add a new entry whenever the dataset changes (new images, re-annotations, different splits)
+# ========================
+# Add a new entry whenever the dataset changes (new images, re-annotations,
+# different splits). This file is for human reference only — not read by any
+# script. It documents what data was used so experiments are reproducible.
+#
+# HOW TO ADD A NEW DATASET VERSION:
+# 1. Copy the dataset into data/<new_name>/images/{train,val,test}/
+#                             data/<new_name>/labels/{train,val,test}/
+# 2. Create configs/data_<new_name>.yaml pointing to data/<new_name>
+# 3. Add an entry below documenting the change
+# 4. Train with: python scripts/train.py --data configs/data_<new_name>.yaml
+#                                         --dataset_version <new_name>
 
-mergeRM_v1:
+mergeRM:
   description: "Original merged RoboMaster armor plate dataset"
   date_added: "2025-02-01"
   source: "NYU server /Datasets/mergeRM"
@@ -11,5 +22,5 @@ mergeRM_v1:
     train: { images: 5805, with_labels: 4836, backgrounds: 968 }
     val: { images: 909, with_labels: 742, backgrounds: 166 }
     test: { images: 706, with_labels: 573, backgrounds: 132 }
-  data_yaml: "configs/data_mergeRM_v1.yaml"
-  notes: "Original yaml had task=obb but trained as standard detect"
+  data_yaml: "configs/data.yaml"
+  notes: "Single class (plate), OBB labels, used for both detect and OBB training"

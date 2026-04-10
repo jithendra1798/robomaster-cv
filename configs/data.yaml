@@ -1,0 +1,20 @@
+# YOLO dataset config for mergeRM
+# Uses relative paths - works on any machine when run from project root
+#
+# Dataset layout:
+#   data/mergeRM/images/{train,val,test}/
+#   data/mergeRM/labels/{train,val,test}/
+#
+# Usage:
+#   python scripts/train.py --data configs/data.yaml
+#   (run from robomaster-cv/ root)
+
+path: data/mergeRM
+train: images/train
+val: images/val
+test: images/test
+
+nc: 1
+names:
+  - plate
+task: obb

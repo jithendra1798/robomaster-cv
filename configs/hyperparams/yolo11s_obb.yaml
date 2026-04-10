@@ -1,0 +1,37 @@
+# YOLOv11s-OBB hyperparameters
+# Tuned on mergeRM dataset, NYU server RTX 4090
+#
+# Key learning: optimizer MUST be set explicitly.
+# Ultralytics auto optimizer overrides lr0 and momentum silently.
+#
+# Geometric augmentations from team benchmark config.
+# Tuning (20 iterations, AdamW explicit) found defaults optimal for
+# weight_decay, box, and mosaic.
+
+model: yolo11s-obb.pt
+task: obb
+epochs: 200
+batch: 64
+imgsz: 640
+
+# Optimizer — explicit to prevent auto-override
+optimizer: AdamW
+lr0: 0.01
+momentum: 0.937
+weight_decay: 0.0005
+
+# Loss
+box: 7.5
+
+# Augmentation (from benchmark)
+mosaic: 1.0
+degrees: 15.0
+shear: 2.0
+mixup: 0.1
+perspective: 0.0001
+
+# Results (server, RTX 4090):
+#   Val:  P=93.0%, R=89.6%, mAP50=95.8%, mAP50-95=82.3%
+#   Test: P=90.2%, R=90.4%, mAP50=94.5%, mAP50-95=78.8%
+#   Inference: 1.5ms/image
+#   Generalization gap (precision): 2.8 points (vs benchmark's 6.1)
