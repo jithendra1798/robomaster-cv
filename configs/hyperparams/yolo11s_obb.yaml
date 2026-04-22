@@ -23,15 +23,16 @@ weight_decay: 0.0005
 # Loss
 box: 7.5
 
-# Augmentation (from benchmark)
+# Augmentation (from benchmark, degrees increased from 15→35 to fix OBB rotation mismatch)
 mosaic: 1.0
-degrees: 15.0
+degrees: 35.0
 shear: 2.0
 mixup: 0.1
 perspective: 0.0001
 
-# Results (server, RTX 4090):
+# --- Baseline results (degrees=15.0, server RTX 4090) ---
 #   Val:  P=93.0%, R=89.6%, mAP50=95.8%, mAP50-95=82.3%
 #   Test: P=90.2%, R=90.4%, mAP50=94.5%, mAP50-95=78.8%
 #   Inference: 1.5ms/image
 #   Generalization gap (precision): 2.8 points (vs benchmark's 6.1)
+#   Error analysis: 242 FPs / 99 FNs; dominant failure = OBB rotation mismatch (48 images in both lists)
