@@ -110,3 +110,7 @@ def main():
     else:
         print(f"\nNormalized labels written to: {dst_root}")
         print("Next: update configs/data.yaml to point to the new labels dir, then retrain.")
+
+
+if __name__ == "__main__":
+    main()
