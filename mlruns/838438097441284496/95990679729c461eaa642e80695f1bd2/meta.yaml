@@ -1,0 +1,14 @@
+artifact_uri: /home/jupyter-robomaster/jithendra/robomaster-cv/mlruns/838438097441284496/95990679729c461eaa642e80695f1bd2/artifacts
+end_time: 1776908822017
+entry_point_name: ''
+experiment_id: '838438097441284496'
+lifecycle_stage: active
+run_id: 95990679729c461eaa642e80695f1bd2
+run_name: yolo11s-obb_200ep
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1776903757785
+status: 3
+tags: []
+user_id: jupyter-robomaster

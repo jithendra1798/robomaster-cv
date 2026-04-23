@@ -1,0 +1,14 @@
+artifact_uri: /home/jupyter-robomaster/jithendra/robomaster-cv/mlruns/411521561019151409/1a3c2fc5e14f4de4bc8a20471be00114/artifacts
+end_time: 1776908827387
+entry_point_name: ''
+experiment_id: '411521561019151409'
+lifecycle_stage: active
+run_id: 1a3c2fc5e14f4de4bc8a20471be00114
+run_name: mysterious-panda-913
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1776908822183
+status: 3
+tags: []
+user_id: jupyter-robomaster
