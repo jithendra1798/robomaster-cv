@@ -84,7 +84,7 @@ def get_device_info():
     if torch.cuda.is_available():
         info["device"] = torch.cuda.get_device_name(0)
         info["cuda"] = torch.version.cuda
-        info["vram_gb"] = round(torch.cuda.get_device_properties(0).total_mem / 1e9, 1)
+        info["vram_gb"] = round(torch.cuda.get_device_properties(0).total_memory / 1e9, 1)
     elif torch.backends.mps.is_available():
         info["device"] = "Apple MPS"
         info["apple_silicon"] = platform.processor()
