@@ -1,0 +1,8 @@
+# Contains passwords. This repo is public: never push it.
+GUIDE.md
+
+# Generated
+data/
+runs/
+*.pt
+*.log
