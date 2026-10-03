@@ -105,6 +105,7 @@ What changed from v1:
 | `robots_yolo11s` | `robots` | baseline | done, 2026-10-01 |
 | `robots_v2_robust` | `robots_v2` | repaired data + mergeRM + camera augmentations | done, 2026-10-02 |
 | `robots_v2_plain` | `robots_v2` | same data, no extra augmentations (ablation) | done, 2026-10-02 |
+| `robots_v2_robust_60ep` | `robots_v2` | robust, but a 60-epoch schedule (aims at the held-out peak) | done, 2026-10-03 |
 
 ### `robots_yolo11s` (v1)
 - **Command:** `python train.py`
@@ -186,7 +187,63 @@ Held-out plate coverage over training (`epochN.pt` holds the weights after N+1 e
 5. **Open: robot-camera colour agreement is about 85% for every model, v1 included.** It's unclear whether that's the models or the HSV check on dark, saturated LEDs. Needs a visual check.
 6. **Open: robot-camera "background" images get about 1 detection each from every model.** These images may contain robots with no labelled plates. Needs a visual check.
 
-**Decision:** no model deployed yet. Proposed next run: the same robust setup with a ~60-epoch schedule, so the model finishes training around the held-out peak. Then pick the Tuesday (2026-10-06) model by held-out scores. Until then, the provisional choice is `robots_v2_robust/best.pt`.
+**Decision:** try a complete short schedule, which became `robots_v2_robust_60ep` below.
+
+### `robots_v2_robust_60ep`
+- **Command:**
+  ```bash
+  PYTHONPATH=~/jithendra/pylibs python train.py --data data/robots_v2/data.yaml --robust \
+    --epochs 60 --patience 60 --save-period 10 --name robots_v2_robust_60ep
+  ```
+- **Code:** commit `4c5d9bc`; `runs/robots_v2_robust_60ep/run_info.yaml` was written automatically.
+- **Settings:** as `robots_v2_robust`, but with 60 epochs. The learning rate fully decays and the last 10 epochs run without mosaic. Patience 60 means no early stopping.
+- **Time:** 1.37 h. `best.pt` = `last.pt` = epoch 60.
+- **Results** (`runs/eval_60ep.log`):
+
+| Data | Result |
+|---|---|
+| Held-out North American matches | coverage 55.8%, colour agreement 98.4%, 0.21 plate-less dets/img, 0.27 dets/background img |
+| Held-out robot camera | coverage 96.8%, colour agreement 85.6%, 0.03 plate-less dets/img, 1.00 dets/background img |
+| Roboflow test (original) | P 0.935, R 0.913, mAP50 0.957, mAP50-95 0.798 |
+| Roboflow test (repaired) | P 0.946, R 0.913, mAP50 0.959, mAP50-95 0.800 |
+
+### Confidence sweep (2026-10-03)
+A single threshold can make a model look better only because it fires more often. The sweep compares models at the **same false-alarm level** instead.
+
+```bash
+python eval_heldout.py --sweep runs/robots_yolo11s/weights/best.pt runs/robots_v2_plain/weights/best.pt \
+  runs/robots_v2_robust/weights/best.pt runs/robots_v2_robust_60ep/weights/best.pt   # -> runs/eval_sweep.log
+```
+
+North American matches, coverage / plate-less detections per image:
+
+| conf | v1 | v2_plain | v2_robust (150 ep) | v2_robust_60ep |
+|---|---|---|---|---|
+| 0.25 | 58.9% / 0.34 | 67.2% / 0.29 | 69.7% / 0.41 | 73.4% / 0.31 |
+| 0.45 | 50.6% / 0.25 | 57.5% / 0.21 | 60.5% / 0.23 | 65.7% / 0.26 |
+| 0.55 | 47.5% / 0.22 | 53.9% / 0.19 | 54.9% / 0.18 | 61.3% / 0.23 |
+| 0.65 | 44.2% / 0.19 | 48.5% / 0.17 | 51.4% / 0.14 | 55.8% / 0.21 |
+| 0.75 | 39.4% / 0.14 | 41.9% / 0.14 | 46.0% / 0.11 | 49.7% / 0.17 |
+| 0.85 | 27.6% / 0.09 | 32.5% / 0.10 | 34.8% / 0.05 | 35.8% / 0.07 |
+
+Robot camera coverage at conf 0.65 is 61.1% / 94.7% / 93.9% / 96.8% for the four models. Plate-less detections there are ≤ 0.04 per image for every model at every threshold.
+
+**Findings:**
+1. **v2 beats v1** at every false-alarm level, by about 10 points on North American matches.
+2. **The robust augmentations help.** At ~0.14 plate-less dets/img, robust covers 51% vs plain's 42%.
+3. **150 vs 60 epochs is a trade-off, not a win.**
+   - At low false-alarm levels (≤ ~0.21/img), the 150-epoch model covers more (e.g. 51% vs ~45% at 0.14).
+   - At high-coverage settings (≥ ~0.26/img), the 60-epoch model covers more.
+   - On Roboflow test, the 150-epoch model is more precise (P 0.958 vs 0.935).
+
+**Decision (2026-10-03): live test both on the Orin on 2026-10-06.**
+
+| | Model | Why | ONNX (md5) |
+|---|---|---|---|
+| **A, primary** | `robots_v2_robust/weights/best.pt` (pt md5 `73f8b13b…`) | Best at low false-alarm levels and the most precise in-domain | `robots_v2_robust.onnx` (`4a9d590aa3c4e5b9d8032c298b37dcab`) |
+| **B** | `robots_v2_robust_60ep/weights/best.pt` (pt md5 `89a7b308…`) | Best coverage when more false alarms are acceptable | `robots_v2_robust_60ep.onnx` (`71730803aa044d5c61914d6900871028`) |
+
+Both ONNX files were exported with `yolo export ... format=onnx imgsz=640 opset=17 simplify=True dynamic=False`. Each has input 1×3×640×640, output 1×7×8400, task `detect`, and names {0: robot_blue, 1: robot_red, 2: robot_unknown}. They sit next to `best.pt` on the server, with copies in `~/Downloads` on the Mac.
 
 ---
 
