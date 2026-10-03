@@ -4,6 +4,8 @@ Train the robot detector (robot_blue / robot_red / robot_unknown) for sentry dec
 Run prepare_data.py once first, then on the GPU server (from robot-detection/):
     python train.py                                   # yolo11s, 100 epochs, batch 32
     python train.py --model yolo11n.pt --name robots_nano
+    PYTHONPATH=~/jithendra/pylibs python train.py --data data/robots_v2/data.yaml --robust \
+        --epochs 150 --patience 40 --save-period 25 --name robots_v2_robust
 
 Outputs (gitignored):
     runs/<name>/weights/best.pt   -> copy this to the Orin (see GUIDE.md)
@@ -31,8 +33,24 @@ def parse_args():
     p.add_argument("--device", default="0", help="GPU index, or 'mps' / 'cpu'")
     p.add_argument("--name", default=None, help="run folder under runs/ (default: robots_<model>)")
     p.add_argument("--fraction", type=float, default=1.0, help="fraction of train images, for quick tests")
+    p.add_argument("--patience", type=int, default=20, help="stop if val mAP hasn't improved for this many epochs")
+    p.add_argument("--save-period", type=int, default=-1, help="also keep a checkpoint every N epochs")
+    p.add_argument("--robust", action="store_true",
+                   help="extra camera augmentations (needs albumentations on PYTHONPATH, see GUIDE.md)")
     p.add_argument("--force", action="store_true", help="start even if the shared GPU is busy")
     return p.parse_args()
+
+
+def robust_augmentations():
+    """Camera effects the training images lack. No hue shift or grayscale: colour is the class."""
+    import albumentations as A
+
+    return [
+        A.MotionBlur(blur_limit=(3, 15), p=0.25),  # the sentry spins and its gimbal moves
+        A.GaussNoise(std_range=(0.02, 0.08), p=0.15),  # sensor noise in dark arenas
+        # Training images were squashed to 640x640 from wider frames; the Orin letterboxes instead.
+        A.Affine(scale={"x": (1.0, 1.5), "y": (1.0, 1.0)}, p=0.3),
+    ]
 
 
 def main():
@@ -60,12 +78,14 @@ def main():
         fraction=args.fraction,
         project=str(HERE / "runs"),
         name=name,
-        patience=20,  # stop early if val mAP hasn't improved for 20 epochs
+        patience=args.patience,
+        save_period=args.save_period,
+        augmentations=robust_augmentations() if args.robust else None,
         # Set explicitly: optimizer="auto" silently overrides lr0 and momentum.
         optimizer="SGD",
         lr0=0.01,
         momentum=0.937,
-        # Augmentation stays at Ultralytics defaults; its hue jitter (hsv_h=0.015) is far too small to turn red into blue.
+        # Other augmentation stays at Ultralytics defaults; its hue jitter (hsv_h=0.015) is far too small to turn red into blue.
     )
 
     # Final score on the held-out test split with the best checkpoint (also prints per-class results).
