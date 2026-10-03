@@ -26,6 +26,8 @@ from pathlib import Path
 
 import yaml
 
+from record import md5, write_record
+
 HERE = Path(__file__).resolve().parent
 CLASSES = ["robot_blue", "robot_red", "robot_unknown"]
 SPLITS = {"train": "train", "valid": "val", "test": "test"}  # Roboflow folder -> YOLO split
@@ -98,6 +100,14 @@ def main():
          "names": dict(enumerate(CLASSES))},
         sort_keys=False,
     ))
+
+    zip_path = Path(args.zip).expanduser().resolve()
+    write_record(out, "dataset_info.yaml", {
+        "dataset": out.name,
+        "source": {"zip": str(zip_path), "bytes": zip_path.stat().st_size, "md5": md5(zip_path)},
+        "class_mapping": {n: CLASSES[c] if c is not None else "dropped" for n, c in zip(names, mapping.values())},
+        "counts": {split: dict(s) for split, s in stats.items()},
+    }, scripts=[__file__, HERE / "record.py"])
 
     cols = ["images", "background", *CLASSES]
     print(f"\n{'split':6s}" + "".join(f"{c:>15s}" for c in cols))

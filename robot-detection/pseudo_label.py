@@ -40,6 +40,8 @@ import numpy as np
 import yaml
 from ultralytics import YOLO
 
+from record import folder_fingerprint, md5, write_record
+
 HERE = Path(__file__).resolve().parent
 CLASSES = ["robot_blue", "robot_red", "robot_unknown"]
 ARMOR_TO_ROBOT = {0: 0, 1: 2, 2: 1}  # Roboflow armor_blue / armor_grey / armor_red -> our class
@@ -262,6 +264,17 @@ def main():
          "names": dict(enumerate(CLASSES))}, sort_keys=False))
     for name, items in qa.items():
         save_grid(items, out / "qa" / f"{name}.jpg")
+    zip_path, mergerm = Path(args.zip).expanduser().resolve(), Path(args.mergerm).expanduser().resolve()
+    info = {
+        "labelled_with": {"model": str(Path(args.model).resolve()), "model_md5": md5(args.model)},
+        "sources": {"base_dataset": str(src), "zip": str(zip_path), "zip_md5": md5(zip_path),
+                    "mergerm": str(mergerm), "mergerm_fingerprint": folder_fingerprint(mergerm)},
+        "heldout_rule": {"matches": sorted(HELDOUT_MATCHES), "ds2_top_fraction": HELDOUT_DS2_FRACTION,
+                         "ds2_buffer_ids": DS2_BUFFER},
+        "stats": {name: dict(s) for name, s in stats.items()},
+    }
+    for folder in (out, heldout):
+        write_record(folder, "dataset_info.yaml", {"dataset": folder.name, **info}, scripts=[__file__, HERE / "record.py"])
     for name, s in stats.items():
         print(f"{name:15s}", dict(s))
     print(f"\nDataset ready: {out / 'data.yaml'}\nHeld-out set: {heldout}\nQA grids: {out / 'qa'}")

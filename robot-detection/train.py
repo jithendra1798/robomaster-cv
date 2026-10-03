@@ -15,10 +15,14 @@ Outputs (gitignored):
 
 import argparse
 import os
+import time
 from pathlib import Path
 
 import torch
+import yaml
 from ultralytics import YOLO
+
+from record import write_record
 
 HERE = Path(__file__).resolve().parent
 
@@ -68,6 +72,10 @@ def main():
     os.environ.setdefault("MLFLOW_TRACKING_URI", str(HERE / "runs" / "mlflow"))
     os.environ.setdefault("MLFLOW_EXPERIMENT_NAME", "robot-detection")
 
+    # [] (not None) switches off Ultralytics' default albumentations set (incl. ToGray), so a plain run
+    # trains the same whether or not albumentations happens to be installed.
+    augmentations = robust_augmentations() if args.robust else []
+    start = time.time()
     model = YOLO(args.model)
     model.train(
         data=args.data,
@@ -80,7 +88,7 @@ def main():
         name=name,
         patience=args.patience,
         save_period=args.save_period,
-        augmentations=robust_augmentations() if args.robust else None,
+        augmentations=augmentations,
         # Set explicitly: optimizer="auto" silently overrides lr0 and momentum.
         optimizer="SGD",
         lr0=0.01,
@@ -98,6 +106,22 @@ def main():
     print(f"\nTest: P={metrics.box.mp:.3f}  R={metrics.box.mr:.3f}  "
           f"mAP50={metrics.box.map50:.3f}  mAP50-95={metrics.box.map:.3f}")
     print(f"Best weights: {best}")
+
+    # Reproducibility record next to the run (all hyperparameters are in args.yaml beside it).
+    data_info = Path(args.data).resolve().parent / "dataset_info.yaml"
+    dataset = yaml.safe_load(data_info.read_text()) if data_info.exists() else {}
+    write_record(save_dir, "run_info.yaml", {
+        "run": save_dir.name,
+        "data": {"yaml": str(Path(args.data).resolve()),
+                 "dataset": dataset.get("dataset", Path(args.data).resolve().parent.name),
+                 "dataset_created": dataset.get("created"),
+                 "dataset_code": dataset.get("code")},
+        "hyperparameters": "args.yaml in this folder",
+        "augmentations": [str(a) for a in augmentations] or "none beyond Ultralytics built-ins (see args.yaml)",
+        "train_hours": round((time.time() - start) / 3600, 2),
+        "test": {"precision": round(float(metrics.box.mp), 4), "recall": round(float(metrics.box.mr), 4),
+                 "mAP50": round(float(metrics.box.map50), 4), "mAP50-95": round(float(metrics.box.map), 4)},
+    }, scripts=[__file__, HERE / "record.py"])
 
 
 if __name__ == "__main__":
